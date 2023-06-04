@@ -101,7 +101,7 @@ class MOCOState(BaseState):
         self.download = False
         self.image_made = True
 
-        return pc.redirect(f"{os.environ.get('download_link')}/{filename}")
+        return pc.redirect(f"http://{os.getenv('IP_ADDRESS')}:8000/download/{filename}")
 
     def set_cluster(self, target_cluster):
         self.cluster_text = f"Cluster {target_cluster}"

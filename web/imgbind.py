@@ -111,7 +111,7 @@ class BINDState(BaseState):
         self.download = False
         self.image_made = True
 
-        return pc.redirect(f"{os.environ.get('download_link')}/{filename}")
+        return pc.redirect(f"http://{os.getenv('IP_ADDRESS')}:8000/download/{filename}")
 
     def start_filter(self):
         self.image_processing = True
