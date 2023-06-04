@@ -1,6 +1,6 @@
 # Error-Free Data Collection
 
-> Detail README will be released later
+> Detailed README will be released later
 
 ## Introduction
 
