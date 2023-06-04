@@ -38,7 +38,9 @@ class BINDState(BaseState):
     num_filter: t.List[int] = []
     image_list: t.List[str] = []
     _backup_image_list: t.List[str] = []
-    _model: torch.nn.Module = imagebind_model.imagebind_huge(pretrained=True).to("cuda").eval()
+    _model: torch.nn.Module = (
+        imagebind_model.imagebind_huge(pretrained=True).to("cuda").eval()
+    )
     _driver: t.Any = set_up_driver()
     _device: str = "cuda"
     _filter_groups: t.List[str] = []
@@ -114,7 +116,7 @@ class BINDState(BaseState):
     def start_filter(self):
         self.image_processing = True
         self.image_made = False
-        
+
     def start_fine_grained_filter(self, dump_param):
         self.start_filter()
         self.fine_grained_filter = False
@@ -132,7 +134,7 @@ class BINDState(BaseState):
             embeddings = self._model(inputs)
             text_output = embeddings[ModalityType.TEXT].cpu()
             del embeddings
-            
+
             for img in self.image_list:
                 if img.startswith("http"):
                     try:
@@ -149,24 +151,22 @@ class BINDState(BaseState):
                             BytesIO(base64.b64decode(img.split(";base64,", 1)[1]))
                         ).convert("RGB")
                     ).to(self._device)
-                
+
                 inputs = {
                     ModalityType.VISION: img.unsqueeze(0),
                 }
                 embeddings = self._model(inputs)
                 img_output.append(embeddings[ModalityType.VISION].cpu().squeeze(0))
-            
+
             img_output = torch.stack(img_output)
             prob = torch.softmax(img_output @ text_output.T, dim=-1)
             left_images = (prob.argmax(dim=1) == 0).numpy().nonzero()[0]
-            self.image_list = [
-                self.image_list[idx] for idx in left_images 
-            ]
+            self.image_list = [self.image_list[idx] for idx in left_images]
 
         self._backup_image_list = self.image_list
         self.fine_grained_filter = True
         self.fine_grained_prompt = ""
-        
+
     def fine_grained_filter_all(self, fine_grained_prompt):
         if not len(self.fine_grained_prompt):
             self.image_list = self._backup_image_list
@@ -174,7 +174,10 @@ class BINDState(BaseState):
             with torch.no_grad():
                 text_output = []
                 img_output = []
-                text_list = [f"{self.prompt} {fine_grained_prompt}", f"{self.prompt} not {fine_grained_prompt}"]
+                text_list = [
+                    f"{self.prompt} {fine_grained_prompt}",
+                    f"{self.prompt} not {fine_grained_prompt}",
+                ]
                 inputs = {
                     ModalityType.TEXT: data.load_and_transform_text(
                         text_list, self._device
@@ -183,7 +186,7 @@ class BINDState(BaseState):
                 embeddings = self._model(inputs)
                 text_output = embeddings[ModalityType.TEXT].cpu()
                 del embeddings
-                
+
                 removed_idx = set()
                 for idx, img in enumerate(self._backup_image_list):
                     if img.startswith("http"):
@@ -202,24 +205,26 @@ class BINDState(BaseState):
                                 BytesIO(base64.b64decode(img.split(";base64,", 1)[1]))
                             ).convert("RGB")
                         ).to(self._device)
-                    
+
                     inputs = {
                         ModalityType.VISION: img.unsqueeze(0),
                     }
                     embeddings = self._model(inputs)
                     img_output.append(embeddings[ModalityType.VISION].cpu().squeeze(0))
-                    
+
                 img_output = torch.stack(img_output)
                 prob = torch.softmax(img_output @ text_output.T, dim=-1)
                 left_images = (prob.argmax(dim=1) == 0).numpy().nonzero()[0]
                 self.image_list = [
-                    self._backup_image_list[idx] for idx in left_images if idx not in removed_idx
+                    self._backup_image_list[idx]
+                    for idx in left_images
+                    if idx not in removed_idx
                 ]
-        
+
     def end_filter(self):
         self.image_made = True
         self.image_processing = False
-        
+
     def end_fine_grained_fitler(self, dump_param):
         self.end_filter()
         self.fine_grained_filter = True
@@ -253,8 +258,12 @@ def bind():
                             value=BINDState.fine_grained_prompt,
                             placeholder="Prompt for fine-grained filtering...",
                             on_change=BINDState.set_fine_grained_prompt,
-                            on_blur=[BINDState.start_fine_grained_filter, BINDState.fine_grained_filter_all, BINDState.end_fine_grained_fitler],
-                        )
+                            on_blur=[
+                                BINDState.start_fine_grained_filter,
+                                BINDState.fine_grained_filter_all,
+                                BINDState.end_fine_grained_fitler,
+                            ],
+                        ),
                     ),
                     pc.cond(
                         BINDState.image_processing,
@@ -292,7 +301,11 @@ def bind():
                         pc.button(
                             "Filter",
                             width="100%",
-                            on_click=[BINDState.start_filter, BINDState.filter_all, BINDState.end_filter],
+                            on_click=[
+                                BINDState.start_filter,
+                                BINDState.filter_all,
+                                BINDState.end_filter,
+                            ],
                             color_scheme="gray",
                         ),
                     ),
