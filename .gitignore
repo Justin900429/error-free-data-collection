@@ -1,0 +1,9 @@
+pynecone.db
+.web
+*.zip
+.checkpoints
+.env
+chromedriver
+**/__pycache__
+**/*.pt
+model
